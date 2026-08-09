@@ -11,13 +11,22 @@ struct Vector2i {
     int y;
 };
 
+Vector2 Vector2iToVector2(const Vector2i &v) {
+    return {
+        static_cast<float>(v.x),
+        static_cast<float>(v.y),
+    };
+}
+
 constexpr int TICKS_PER_SECOND = 5;
 constexpr float TIME_PER_TICK = 1.0f / static_cast<float>(TICKS_PER_SECOND);
 
 constexpr int CELL_WIDTH = 32;
 constexpr int CELL_HEIGHT = 32;
+constexpr Vector2i CELL_SIZE{CELL_WIDTH, CELL_HEIGHT};
 constexpr int APPLE_WIDTH = 16;
 constexpr int APPLE_HEIGHT = 16;
+constexpr Vector2i APPLE_SIZE{APPLE_WIDTH, APPLE_HEIGHT};
 
 /// 16x9 grid + 1 extra cell so there is a center
 constexpr int GRID_WIDTH = 16 * 2 + 1;
@@ -82,9 +91,7 @@ void DrawApples() {
     for (const auto &apple : apples) {
         Vector2 cellOrigin = CellToScreenCoords(apple);
         Vector2 appleOriginOffset = Vector2Divide(
-            Vector2Subtract(
-                {CELL_WIDTH, CELL_HEIGHT}, {APPLE_WIDTH, APPLE_HEIGHT}
-            ),
+            Vector2Subtract(Vector2iToVector2(CELL_SIZE), Vector2iToVector2(APPLE_SIZE)),
             {2, 2}
         );
         Vector2 appleOrigin = Vector2Add(cellOrigin, appleOriginOffset);
