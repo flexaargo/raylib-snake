@@ -1,10 +1,10 @@
 #include <cstdlib>
-#include <iostream>
 #include <raylib.h>
 #include <raymath.h>
 #include <vector>
 #include <cmath>
 #include <random>
+#include <algorithm>
 
 struct Vector2i {
     int x;
@@ -16,6 +16,10 @@ Vector2 Vector2iToVector2(const Vector2i &v) {
         static_cast<float>(v.x),
         static_cast<float>(v.y),
     };
+}
+
+inline bool Vector2iEquals(const Vector2i &v1, const Vector2i &v2) {
+    return v1.x == v2.x && v1.y == v2.y;
 }
 
 constexpr int TICKS_PER_SECOND = 5;
@@ -68,6 +72,11 @@ std::vector<Vector2i> apples{};
 
 std::mt19937 rng(std::random_device{}());
 
+void IncreaseSnakeBody() {
+    if (snakePoints.empty()) return;
+    snakePoints.insert(snakePoints.end(), snakePoints.back());
+}
+
 void UpdateInputDir() {
     Vector2i newInputVector{};
     newInputVector.y = IsKeyPressed(KEY_DOWN) - IsKeyPressed(KEY_UP);
@@ -102,9 +111,17 @@ void DrawApples() {
 void UpdateSnakePosition() {
     if (IsVector2iZero(inputDir)) return;
     if (snakePoints.empty()) return;
-    Vector2i next = CellOffset(snakePoints.front(), inputDir);
-    snakePoints.pop_back();
-    snakePoints.insert(snakePoints.begin(), next);
+    // basically looping thru snake in reverse and setting pos = next body pos
+    for (auto it = snakePoints.rbegin(); it != snakePoints.rend(); ++it) {
+        auto &curr = *it;
+        auto nextIt = it + 1;
+        if (nextIt != snakePoints.rend()) {
+            curr = *nextIt;
+        } else {
+            // this is the head of the snake
+            curr = CellOffset(curr, inputDir);
+        }
+    }
     moveDir = inputDir;
 }
 
@@ -112,16 +129,41 @@ void Update(float delta) {
     UpdateInputDir();
 }
 
-void TickUpdate(float delta) {
-    UpdateSnakePosition();
+void TrySpawnApple() {
     std::uniform_int_distribution<int> appleSpawnChance(1, 100);
     int randomNum = appleSpawnChance(rng);
     if (randomNum < 5) {
-        std::cout << "Spawning Apple!\n";
         std::uniform_int_distribution<int> appleSpawnLocationX(1, GRID_WIDTH-1);
         std::uniform_int_distribution<int> appleSpawnLocationY(1, GRID_HEIGHT-1);
-        apples.push_back({appleSpawnLocationX(rng), appleSpawnLocationY(rng)});
+        Vector2i spawnPosition{};
+        const auto snakeContainsPosition = [spawnPosition](const Vector2i &pos){
+            return Vector2iEquals(pos, spawnPosition);
+        };
+        do {
+            spawnPosition = {appleSpawnLocationX(rng), appleSpawnLocationY(rng)};
+        } while (std::find_if(snakePoints.begin(), snakePoints.end(), snakeContainsPosition) != snakePoints.end());
+        apples.push_back(spawnPosition);
     }
+}
+
+void CheckAppleCollision() {
+    if (snakePoints.empty()) return;
+    Vector2i &head = snakePoints.front();
+    int i = 0;
+    for (const auto &apple : apples) {
+        if (Vector2iEquals(apple, head)) {
+            apples.erase(apples.begin() + i);
+            IncreaseSnakeBody();
+            return;
+        }
+        ++i;
+    }
+}
+
+void TickUpdate(float delta) {
+    UpdateSnakePosition();
+    CheckAppleCollision();
+    TrySpawnApple();
 }
 
 int main(void) {
