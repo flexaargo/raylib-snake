@@ -16,6 +16,8 @@ constexpr float TIME_PER_TICK = 1.0f / static_cast<float>(TICKS_PER_SECOND);
 
 constexpr int CELL_WIDTH = 32;
 constexpr int CELL_HEIGHT = 32;
+constexpr int APPLE_WIDTH = 16;
+constexpr int APPLE_HEIGHT = 16;
 
 /// 16x9 grid + 1 extra cell so there is a center
 constexpr int GRID_WIDTH = 16 * 2 + 1;
@@ -78,8 +80,15 @@ void DrawSnake() {
 
 void DrawApples() {
     for (const auto &apple : apples) {
-        Vector2 screenCoords = CellToScreenCoords(apple);
-        DrawRectangle(screenCoords.x, screenCoords.y, CELL_WIDTH, CELL_HEIGHT, APPLE_COLOR);
+        Vector2 cellOrigin = CellToScreenCoords(apple);
+        Vector2 appleOriginOffset = Vector2Divide(
+            Vector2Subtract(
+                {CELL_WIDTH, CELL_HEIGHT}, {APPLE_WIDTH, APPLE_HEIGHT}
+            ),
+            {2, 2}
+        );
+        Vector2 appleOrigin = Vector2Add(cellOrigin, appleOriginOffset);
+        DrawRectangle(appleOrigin.x, appleOrigin.y, APPLE_WIDTH, APPLE_HEIGHT, APPLE_COLOR);
     }
 }
 
