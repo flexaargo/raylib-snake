@@ -11,14 +11,14 @@ struct Vector2i {
     int y;
 };
 
-Vector2 Vector2iToVector2(const Vector2i &v) {
+constexpr Vector2 Vector2iToVector2(const Vector2i &v) {
     return {
         static_cast<float>(v.x),
         static_cast<float>(v.y),
     };
 }
 
-inline bool Vector2iEquals(const Vector2i &v1, const Vector2i &v2) {
+constexpr bool Vector2iEquals(const Vector2i &v1, const Vector2i &v2) {
     return v1.x == v2.x && v1.y == v2.y;
 }
 
@@ -42,25 +42,22 @@ constexpr Color SNAKE_COLOR = WHITE;
 constexpr Color APPLE_COLOR = GREEN;
 
 constexpr Vector2i GetCenterCellPos() {
-    return{
-        static_cast<int>(GRID_WIDTH / 2),
-        static_cast<int>(GRID_HEIGHT / 2),
-    };
+    return{GRID_WIDTH / 2, GRID_HEIGHT / 2};
 }
 
-Vector2 CellToScreenCoords(const Vector2i &cell) {
+constexpr Vector2 CellToScreenCoords(const Vector2i &cell) {
     return {static_cast<float>(cell.x * CELL_WIDTH), static_cast<float>(cell.y * CELL_HEIGHT)};
 }
 
-inline bool IsVector2Zero(const Vector2 &v) {
+bool IsVector2Zero(const Vector2 &v) {
     return Vector2Equals(v, Vector2Zero());
 }
 
-inline bool IsVector2iZero(const Vector2i &v) {
+constexpr bool IsVector2iZero(const Vector2i &v) {
     return v.x == 0 && v.y == 0;
 }
 
-Vector2i CellOffset(const Vector2i &pos, const Vector2i &offset) {
+constexpr Vector2i CellOffset(const Vector2i &pos, const Vector2i &offset) {
     return {pos.x + offset.x, pos.y + offset.y};
 }
 
