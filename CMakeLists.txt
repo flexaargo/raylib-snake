@@ -9,6 +9,7 @@ find_package(raylib REQUIRED)
 
 add_executable(game
     src/main.cpp
+    src/menu.cpp
 )
 
 target_link_libraries(game PRIVATE raylib)

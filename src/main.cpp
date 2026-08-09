@@ -6,6 +6,9 @@
 #include <random>
 #include <algorithm>
 
+#include "menu.hpp"
+#include "game_consts.hpp"
+
 struct Vector2i {
     int x;
     int y;
@@ -22,25 +25,22 @@ constexpr bool Vector2iEquals(const Vector2i &v1, const Vector2i &v2) {
     return v1.x == v2.x && v1.y == v2.y;
 }
 
-constexpr int TICKS_PER_SECOND = 5;
-constexpr float TIME_PER_TICK = 1.0f / static_cast<float>(TICKS_PER_SECOND);
-
-constexpr int CELL_WIDTH = 32;
-constexpr int CELL_HEIGHT = 32;
 constexpr Vector2i CELL_SIZE{CELL_WIDTH, CELL_HEIGHT};
 constexpr int APPLE_WIDTH = 16;
 constexpr int APPLE_HEIGHT = 16;
 constexpr Vector2i APPLE_SIZE{APPLE_WIDTH, APPLE_HEIGHT};
 constexpr float APPLE_SPAWN_TIMEOUT_SECS = 5.0f;
 
-/// 16x9 grid + 1 extra cell so there is a center
-constexpr int GRID_WIDTH = 16 * 2 + 1;
-constexpr int GRID_HEIGHT = 9 * 2 + 1;
-constexpr int WINDOW_WIDTH = CELL_WIDTH * GRID_WIDTH;
-constexpr int WINDOW_HEIGHT = CELL_HEIGHT * GRID_HEIGHT;
-
-constexpr Color SNAKE_COLOR = WHITE;
+constexpr Color BACKGROUND_COLOR = BLACK;
+constexpr Color TEXT_COLOR = WHITE;
+constexpr Color SNAKE_COLOR = LIGHTGRAY;
 constexpr Color APPLE_COLOR = GREEN;
+
+enum class GameState {
+    Menu,
+    Running,
+    Over,
+};
 
 constexpr Vector2i GetCenterCellPos() {
     return{GRID_WIDTH / 2, GRID_HEIGHT / 2};
@@ -64,11 +64,11 @@ constexpr Vector2i CellOffset(const Vector2i &pos, const Vector2i &offset) {
 
 float tickAccumulator = 0.0f;
 float appleSpawnAccumulator = APPLE_SPAWN_TIMEOUT_SECS;
+GameState gameState = GameState::Menu;
 Vector2i inputDir{};
 Vector2i moveDir{};
 std::vector<Vector2i> snakeBody{GetCenterCellPos()};
 std::vector<Vector2i> apples{};
-
 std::mt19937 rng(std::random_device{}());
 
 void IncreaseSnakeBody() {
@@ -88,25 +88,6 @@ void UpdateInputDir() {
     inputDir = newInputVector;
 }
 
-void DrawSnake() {
-    for (const auto &point : snakeBody) {
-        Vector2 screenCoords = CellToScreenCoords(point);
-        DrawRectangle(screenCoords.x, screenCoords.y, CELL_WIDTH, CELL_HEIGHT, SNAKE_COLOR);
-    }
-}
-
-void DrawApples() {
-    for (const auto &apple : apples) {
-        Vector2 cellOrigin = CellToScreenCoords(apple);
-        Vector2 appleOriginOffset = Vector2Divide(
-            Vector2Subtract(Vector2iToVector2(CELL_SIZE), Vector2iToVector2(APPLE_SIZE)),
-            {2, 2}
-        );
-        Vector2 appleOrigin = Vector2Add(cellOrigin, appleOriginOffset);
-        DrawRectangle(appleOrigin.x, appleOrigin.y, APPLE_WIDTH, APPLE_HEIGHT, APPLE_COLOR);
-    }
-}
-
 void UpdateSnakePosition() {
     if (IsVector2iZero(inputDir)) return;
     if (snakeBody.empty()) return;
@@ -122,10 +103,6 @@ void UpdateSnakePosition() {
         }
     }
     moveDir = inputDir;
-}
-
-void Update(float delta) {
-    UpdateInputDir();
 }
 
 bool IsInvalidAppleSpawnPosition(Vector2i spawnPos) {
@@ -168,15 +145,52 @@ void CheckAppleCollision() {
     }
 }
 
+void Update(float delta) {
+    UpdateInputDir();
+
+    if (gameState == GameState::Menu && !IsVector2iZero(inputDir)) {
+        gameState = GameState::Running;
+    }
+}
+
 void TickUpdate(float delta) {
+    if (gameState != GameState::Running) return;
     UpdateSnakePosition();
     CheckAppleCollision();
     TrySpawnApple(delta);
 }
 
+void DrawSnake() {
+    for (const auto &point : snakeBody) {
+        Vector2 screenCoords = CellToScreenCoords(point);
+        DrawRectangle(screenCoords.x, screenCoords.y, CELL_WIDTH, CELL_HEIGHT, SNAKE_COLOR);
+    }
+}
+
+void DrawApples() {
+    for (const auto &apple : apples) {
+        Vector2 cellOrigin = CellToScreenCoords(apple);
+        Vector2 appleOriginOffset = Vector2Divide(
+            Vector2Subtract(Vector2iToVector2(CELL_SIZE), Vector2iToVector2(APPLE_SIZE)),
+            {2, 2}
+        );
+        Vector2 appleOrigin = Vector2Add(cellOrigin, appleOriginOffset);
+        DrawRectangle(appleOrigin.x, appleOrigin.y, APPLE_WIDTH, APPLE_HEIGHT, APPLE_COLOR);
+    }
+}
+
+void Draw() {
+    DrawApples();
+    DrawSnake();
+    if (gameState == GameState::Menu) {
+        DrawMenu();
+    }
+}
+
 int main(void) {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Snake!");
     SetTargetFPS(60);
+    LoadMenuTextures();
     while (!WindowShouldClose()) {
         float frameTime = GetFrameTime();
         tickAccumulator += frameTime;
@@ -186,11 +200,11 @@ int main(void) {
             tickAccumulator = 0;
         }
         BeginDrawing();
-        ClearBackground(DARKGRAY);
-        DrawApples();
-        DrawSnake();
+        ClearBackground(BACKGROUND_COLOR);
+        Draw();
         EndDrawing();
     }
+    UnloadMenuTextures();
     CloseWindow();
     return 0;
 }
