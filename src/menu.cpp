@@ -1,6 +1,5 @@
 #include <raylib.h>
 #include <optional>
-#include <algorithm>
 #include <vector>
 
 #include "game_consts.hpp"
@@ -86,4 +85,3 @@ void DrawMenu() {
     DrawText("SNAKE!", menuTitleOrigin.x, menuTitleOrigin.y, TITLE_FONT_SIZE, TEXT_COLOR);
     DrawArrowKeys();
 }
-
